@@ -1,41 +1,44 @@
+const express = require('express');
 const admin = require('firebase-admin');
-const userModel = require('../model/users'); // Assuming you have this model defined somewhere
-const credentials = require('./sample-irf-firebase-adminsdk-go66e-ab6a485b45.json');
+const userModel = require('../model/users');
+const phoneUtil = require('google-libphonenumber').PhoneNumberUtil.getInstance();
 
-// Initialize Firebase Admin SDK
-admin.initializeApp({
-  credential: admin.credential.cert(credentials),
-});
+
+
+const router = express.Router();
 
 function generateOTP() {
   return Math.floor(1000 + Math.random() * 9000);
 }
 
-const sendOTP = async (req, res) => {
-  const phoneNumber = req.body.phoneNumber;
+async function sendOTP(phNum) {
+  const phoneNumber = phNum;
 
   try {
-    const userRecord = await admin.auth().getUserByPhoneNumber(phoneNumber);
+
+    //const userRecord = await admin.auth().getUserByPhoneNumber(formattedPhoneNumber);
 
     // Generate OTP and store it in the database
     const otp = generateOTP();
-    await userModel.updateOne(
-      { phoneNumber },
-      { $set: { otp } },
-      { upsert: true }
-    );
+    
+    // await userModel.updateOne(
+    //   { phoneNumber: phNum },
+    //   { $set: { otp } },
+    //   { upsert: true }
+    // );
 
     // Send OTP to the user via SMS
     // Implement this part using Twilio or another SMS service
 
-    res.json({ message: 'OTP sent successfully.' });
+    return 0
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Failed to send OTP.' });
+    // You should throw the error instead of sending a response here
+    throw new Error('Failed to send OTP.');
   }
-};
+}
 
-const verifyOTP = async (req, res) => {
+async function verifyOTP(req, res) {
   const phoneNumber = req.body.phoneNumber;
   const otp = req.body.otp;
 
@@ -43,18 +46,28 @@ const verifyOTP = async (req, res) => {
     const user = await userModel.findOne({ phoneNumber, otp });
 
     if (user) {
-      const updatedUser = await admin.auth().updateUser(user.uid, { smsCode: otp });
+      // Authenticate the user using Firebase Authentication
+      const userRecord = await admin.auth().getUserByPhoneNumber(phoneNumber);
+      const credential = admin.auth.PhoneAuthProvider.credential(
+        userRecord.uid,
+        otp
+      );
+      const authResult = await admin.auth().signInWithCredential(credential);
 
-      // Successful OTP verification
-      // You can implement further authentication logic here
-      res.json({ message: 'OTP verification successful.' });
+      // Update the user's phone number in the database
+      await userModel.updateOne(
+        { phoneNumber },
+        { $set: { uid: authResult.user.uid } }
+      );
+
+      res.json({ message: 'Authentication successful.' });
     } else {
       res.status(401).json({ error: 'Invalid OTP.' });
     }
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Error verifying OTP.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to verify OTP.' });
   }
-};
+}
 
 module.exports = { sendOTP, verifyOTP };
