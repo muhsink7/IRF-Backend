@@ -1,6 +1,16 @@
 const express = require('express');
-const { sendOTP } = require('../controllers/login');
+const { sendOTP, verifyOTP } = require('../controllers/login');
+const { Admin } = require('mongodb');
 const userRouter = express.Router();
+
+userRouter.post('/admin/login',(req,res)=>{
+  const {username,password}=req.body;
+  if(username=== Admin.username && password=== Admin.password){
+    res.json({message:'Login successfull',token:'admin'});
+  }else{
+    res.status(401).json({error:'Invalid credentials'});
+  }
+})
 
 userRouter.post('/sendOTP', (req, res) => {
   sendOTP(req.body.phoneNumber)
