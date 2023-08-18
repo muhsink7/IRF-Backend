@@ -15,18 +15,34 @@ admin.initializeApp({
   credential: admin.credential.cert(credentials),
 });
 
-// MongoDB connection
-const mongoURL = 'mongodb+srv://satish421:8w93dwNoqmjfBKQ5@cluster0.pl6tdpd.mongodb.net/?retryWrites=true&w=majority'; // Update with your MongoDB URL
-const dbName = 'phoneAuthDemo';
 
-MongoClient.connect(mongoURL, (err, client) => {
-  if (err) throw err;
-  const db = client.db(dbName);
-  const users = db.collection('users');
+
+const mongoURL = 'mongodb+srv://satish421:8w93dwNoqmjfBKQ5@cluster0.pl6tdpd.mongodb.net/?retryWrites=true&w=majority'; // Update with your MongoDB URL
+
+mongoose.connect(mongoURL, {useNewUrlParser: true, useUnifiedTopology: true}).then((err,done)=>{
+  // if (err) throw err;
+
+    console.log("connected to db");
+    app.listen(PORT, () => {
+      console.log(`Server is running on http://localhost:${PORT}`);
+      const db = mongoose.connection;
+      const usersCollection = db.collection('users');
+    });
+}).catch((err)=>{console.log(err)});
+
+
+
+// // MongoDB connection
+// const dbName = 'IRF-INDIAN RACE FANTASY';
+
+// MongoClient.connect(mongoURL, (err, client) => {
+//   if (err) throw err;
+//   const db = client.db(dbName);
+//   const users = db.collection('users');
 
   // Send OTP via Firebase
   
   app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
   });
-});
+

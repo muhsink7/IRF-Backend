@@ -40,7 +40,7 @@ const verifyOTP = async (req, res) => {
   const otp = req.body.otp;
 
   try {
-    const user = await userModel.findOne({ phoneNumber, otp });
+    // const user = await userModel.findOne({ phoneNumber, otp });
 
     if (user) {
       const updatedUser = await admin.auth().updateUser(user.uid, { smsCode: otp });
